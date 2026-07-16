@@ -14,19 +14,32 @@ pub fn build(b: *std.Build) void {
         .root_source_file = b.path("main.zig"),
         .target = target,
         .optimize = optimize,
-        .link_libc = target.result.os.tag == .emscripten,
+        // Needed so that std.DynLib resolves to a real dlopen (DlDynLib) on
+        // Linux/macOS instead of the no-libc ElfDynLib path, which doesn't
+        // process relocations against the game library's SDL3 dependency.
+        .link_libc = switch (target.result.os.tag) {
+            .emscripten, .linux, .macos => true,
+            else => false,
+        },
     });
     const app_exe = b.addExecutable(.{
         .name = "breakout",
         .root_module = app_mod,
     });
 
+    // Built as a shared library so that the host (main.zig) and the game
+    // (game.zig) link against the exact same running instance of SDL3
+    // rather than each getting their own statically-linked copy, which
+    // would otherwise mean two independent SDL3 instances (and event
+    // queues) in the same process.
     const sdl_dep = b.dependency("sdl", .{
         .target = target,
         .optimize = optimize,
+        .preferred_linkage = .dynamic,
     });
     const sdl_lib = sdl_dep.artifact("SDL3");
     app_mod.linkLibrary(sdl_lib);
+    b.installArtifact(sdl_lib);
 
     const translate_c_dep = b.dependency("translate_c", .{});
     const translator: translate_c.Translator = .init(translate_c_dep, .{
@@ -43,10 +56,36 @@ pub fn build(b: *std.Build) void {
     translator.linkLibrary(sdl_lib);
     app_mod.addImport("c", translator.mod);
 
+    // The game itself lives in game.zig, built as a DLL so that main.zig can
+    // hot-reload it at runtime (see main.zig's native host loop). app_mod
+    // intentionally does not link game_lib or import "game" - it only ever
+    // loads it dynamically via LoadLibraryW/GetProcAddress at runtime.
+    const game_mod = b.createModule(.{
+        .root_source_file = b.path("game.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+    game_mod.linkLibrary(sdl_lib);
+    game_mod.addImport("c", translator.mod);
+    const game_lib = b.addLibrary(.{
+        .linkage = .dynamic,
+        .name = "game",
+        .root_module = game_mod,
+    });
+    // Installed into "bin" (rather than the default "lib") so that main.zig
+    // can find it as a plain sibling of the exe on every OS, matching where
+    // Windows already puts DLLs.
+    b.getInstallStep().dependOn(&b.addInstallArtifact(game_lib, .{
+        .dest_dir = .{ .override = .bin },
+    }).step);
+
     b.installArtifact(app_exe);
 
     const run_app = b.addRunArtifact(app_exe);
-    run_app.addPassthruArgs();
+    if (b.args) |args| {
+        run_app.addArgs(args);
+    }
+    // run_app.addPassthruArgs();
     run_app.step.dependOn(b.getInstallStep());
 
     const run = b.step("run", "Run the app");
@@ -103,6 +142,17 @@ fn buildWeb(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.built
     translator.addSystemIncludePath(system_include_path);
     translator.linkLibrary(sdl_lib);
     app_mod.addImport("c", translator.mod);
+
+    const game_mod = b.createModule(.{
+        .root_source_file = b.path("game.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    game_mod.addSystemIncludePath(system_include_path);
+    game_mod.linkLibrary(sdl_lib);
+    game_mod.addImport("c", translator.mod);
+    app_mod.addImport("game", game_mod);
 
     const run_emcc = b.addSystemCommand(&.{"emcc"});
 

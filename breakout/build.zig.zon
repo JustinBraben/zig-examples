@@ -5,15 +5,15 @@
     .name = .breakout,
     .version = "0.0.0",
     .fingerprint = 0xdafcbd308058adbe,
-    .minimum_zig_version = "0.17.0-dev",
+    .minimum_zig_version = "0.16.0",
     .dependencies = .{
         .sdl = .{
-            .url = "git+https://github.com/castholm/SDL.git#018241066ffdae90d8b11f8bdc6242202f0f5451",
-            .hash = "sdl-0.5.1+3.4.10-SDL--kbMpgGMXke11Ujh5HUPKch7G_SUAS12LI0QFoqj",
+            .url = "git+https://github.com/castholm/SDL.git#1b67d371a531ecb0499d4b80a865631c299f472a",
+            .hash = "sdl-0.5.2+3.4.12-SDL--qPKpwHc40bqAlYs7W9pXJVyLwsGDNa4shNXbOZr",
         },
         .translate_c = .{
-            .url = "git+https://codeberg.org/ziglang/translate-c#c26bb176f3d63c8f3f57ac4e82d78f9124506b0d",
-            .hash = "translate_c-0.0.0-Q_BUWuEVBwCbZUsNorTQ6-d3nYx8KDgHHWtVWBzgzyB5",
+            .url = "git+https://codeberg.org/ziglang/translate-c#4d2441a37d16bc87a4dc8a5874d40061e6d0752a",
+            .hash = "translate_c-0.0.0-Q_BUWkL1BgDPnZQBTO2bb9XUJMB08TJW_g5Rxx7CyZnj",
         },
     },
     .paths = .{
