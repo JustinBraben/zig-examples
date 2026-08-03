@@ -7,6 +7,21 @@ const c = @import("c");
 
 pub const std_options: std.Options = .{ .log_level = .debug };
 
+// Zig 0.16.0's default `std.Options.debug_io` (used by std.log and panics)
+// pulls in `std.Io.Threaded`, whose POSIX child-wait code fails to compile
+// for wasm32-emscripten (stdlib bug, fixed upstream for 0.17.0-dev via
+// ziglang/zig#31850). Route around it only for the emscripten target; every
+// other target keeps the stdlib's normal defaults.
+pub const std_options_debug_io: std.Io = if (builtin.target.os.tag == .emscripten)
+    std.Io.failing
+else
+    std.Io.Threaded.global_single_threaded.io();
+
+pub const panic = if (builtin.target.os.tag == .emscripten)
+    std.debug.no_panic
+else
+    std.debug.FullPanic(std.debug.defaultPanic);
+
 const app_log = std.log.scoped(.app);
 
 pub fn main() !u8 {
