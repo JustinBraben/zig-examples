@@ -133,13 +133,13 @@ const PosixGameModule = struct {
 
         return .{
             .handle = handle,
-            .gameStateSize = @ptrCast(try getProcDynLib(&handle, "gameStateSize")),
-            .gameStateAlign = @ptrCast(try getProcDynLib(&handle, "gameStateAlign")),
-            .gameInit = @ptrCast(try getProcDynLib(&handle, "gameInit")),
-            .gameEvent = @ptrCast(try getProcDynLib(&handle, "gameEvent")),
-            .gameIterate = @ptrCast(try getProcDynLib(&handle, "gameIterate")),
-            .gameQuit = @ptrCast(try getProcDynLib(&handle, "gameQuit")),
-            .gameReloaded = @ptrCast(try getProcDynLib(&handle, "gameReloaded")),
+            .gameStateSize = @alignCast(@ptrCast(try getProcDynLib(&handle, "gameStateSize"))),
+            .gameStateAlign = @alignCast(@ptrCast(try getProcDynLib(&handle, "gameStateAlign"))),
+            .gameInit = @alignCast(@ptrCast(try getProcDynLib(&handle, "gameInit"))),
+            .gameEvent = @alignCast(@ptrCast(try getProcDynLib(&handle, "gameEvent"))),
+            .gameIterate = @alignCast(@ptrCast(try getProcDynLib(&handle, "gameIterate"))),
+            .gameQuit = @alignCast(@ptrCast(try getProcDynLib(&handle, "gameQuit"))),
+            .gameReloaded = @alignCast(@ptrCast(try getProcDynLib(&handle, "gameReloaded"))),
         };
     }
 

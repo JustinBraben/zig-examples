@@ -65,7 +65,6 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
-    game_mod.linkLibrary(sdl_lib);
     game_mod.addImport("c", translator.mod);
     const game_lib = b.addLibrary(.{
         .linkage = .dynamic,
